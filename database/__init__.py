@@ -17,12 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-
-from typing import TYPE_CHECKING, Self, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import asyncpg
 
 from .models import *
+
 
 if TYPE_CHECKING:
     type PoolT = asyncpg.Pool[asyncpg.Record]
@@ -40,7 +40,7 @@ class Database:
         self.dsn = dsn
 
     def __repr__(self) -> str:
-        return f"Database(...)"
+        return "Database(...)"
 
     async def __aenter__(self) -> Self:
         return await self.setup()
@@ -76,12 +76,11 @@ class Database:
     async def add_token(self, user_id: str, token: str, refresh: str) -> None:
         assert self.pool
 
-        query = """
-                INSERT INTO 
-                tokens (user_id, access_token, refresh_token)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (user_id) DO NOTHING
-                """
+        query = """INSERT INTO
+        tokens (user_id, access_token, refresh_token)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id) DO NOTHING
+        """
 
         async with self.pool.acquire() as conn:
             await conn.execute(query, user_id, token, refresh)

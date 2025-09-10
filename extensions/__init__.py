@@ -13,12 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pathlib
 import logging
+import pathlib
 
 from twitchio.ext import commands
 
 import core
+
 
 LOGGER: logging.Logger = logging.getLogger("Extensions")
 

@@ -17,8 +17,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from yaml import load, Loader
 from dotenv import dotenv_values
+from yaml import Loader, load
+
 
 if TYPE_CHECKING:
     from .types_ import ConfigT
