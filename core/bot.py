@@ -20,13 +20,15 @@ from typing import TYPE_CHECKING
 
 import twitchio
 from twitchio import eventsub
-from twitchio.authentication import UserTokenPayload
 from twitchio.ext import commands
 
 from .config import config
 
 
 if TYPE_CHECKING:
+    from cryptography.fernet import Fernet
+    from twitchio.authentication import UserTokenPayload
+
     from database import Database
 
 
@@ -34,8 +36,9 @@ LOGGER: logging.Logger = logging.getLogger("Bot")
 
 
 class Bot(commands.AutoBot):
-    def __init__(self, *, db: Database) -> None:
+    def __init__(self, *, db: Database, fern: Fernet) -> None:
         self.db = db
+        self.fern = fern
 
         options = config["bot"]
         super().__init__(**options, prefix=self.prefix)
@@ -73,7 +76,6 @@ class Bot(commands.AutoBot):
 
     async def setup_hook(self) -> None:
         await self.subscribe()
-
         await self.load_module("extensions")
 
     async def event_ready(self) -> None:
@@ -88,7 +90,9 @@ class Bot(commands.AutoBot):
             # Should never be True (TwitchIO quirk)
             return
 
-        await self.db.add_token(user_id, token, refresh)
+        encrypted_at = self.fern.encrypt(token.encode()).decode()
+        encrypted_rt = self.fern.encrypt(refresh.encode()).decode()
+        await self.db.add_token(user_id, encrypted_at, encrypted_rt)
 
         assert self.user
         if user_id == self.user.id:
@@ -96,6 +100,18 @@ class Bot(commands.AutoBot):
             return
 
         await self.subscribe(user_id=user_id)
+
+    async def load_tokens(self, path: str | None = None) -> None:
+        tokens = await self.db.fetch_tokens()
+
+        for payload in tokens:
+            encrypted_at = payload.access_token
+            encrypted_rt = payload.refresh_token
+
+            token = self.fern.decrypt(encrypted_at).decode()
+            refresh = self.fern.decrypt(encrypted_rt).decode()
+
+            await self.add_token(token=token, refresh=refresh)
 
     # NOTE: Twitchio Fix...
     async def prefix(self, _: commands.Bot, message: twitchio.ChatMessage) -> list[str]:
@@ -106,8 +122,8 @@ class Bot(commands.AutoBot):
 
     async def event_command_error(self, payload: commands.CommandErrorPayload) -> None:
         error = payload.exception
-        
+
         if isinstance(error, commands.CommandNotFound):
             return
-        
+
         LOGGER.exception(error, exc_info=error, stack_info=True)

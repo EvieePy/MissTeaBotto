@@ -16,6 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 
+from cryptography.fernet import Fernet
 from twitchio.utils import setup_logging
 
 import core
@@ -28,8 +29,13 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 def main() -> None:
     setup_logging()
 
+    with open(".secret") as fp:
+        key = fp.read()
+
+    fern = Fernet(key)
+
     async def runner() -> None:
-        async with Database(**core.config["database"]) as db, core.Bot(db=db) as bot:
+        async with Database(**core.config["database"]) as db, core.Bot(db=db, fern=fern) as bot:
             await bot.start()
 
     try:
