@@ -214,3 +214,7 @@ TODO*
 
 # Crypt Key
 .secret
+
+# Config
+config.yaml
+config.toml
