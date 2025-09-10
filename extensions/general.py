@@ -12,12 +12,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING
 
 from twitchio.ext import commands, routines
+
 
 if TYPE_CHECKING:
     import core
@@ -31,15 +33,15 @@ class GeneralComponent(commands.Component):
     @commands.command()
     async def test(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("wot")
-        
-    @routines.routine(delta=datetime.timedelta(minutes=30))
+
+    @routines.routine(delta=datetime.timedelta(minutes=30), wait_first=True)
     async def discord_routine(self) -> None:
         # TODO: Logging...
-        
+
         user = self.bot.owner
         if not user:
             return
-        
+
         assert self.bot.user
         await user.send_message("Join my discord for tea! https://discord.gg/cft7GbQt58", sender=self.bot.user)
 
