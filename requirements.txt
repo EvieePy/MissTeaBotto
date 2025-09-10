@@ -1,0 +1,5 @@
+twitchio[starlette]>=3.1.0,<=4
+python-dotenv
+pyyaml
+asyncpg
+asyncpg-stubs
