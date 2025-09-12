@@ -24,6 +24,7 @@ from twitchio import eventsub
 from twitchio.ext import commands
 
 from .config import config
+from .adapter import CustomAdapter
 
 
 if TYPE_CHECKING:
@@ -44,7 +45,7 @@ class Bot(commands.AutoBot):
         self.session = session
 
         options = config["bot"]
-        super().__init__(**options, prefix=self.prefix)
+        super().__init__(**options, prefix=self.prefix, adapter=CustomAdapter())
 
     def get_subs(self, user_id: str) -> list[eventsub.SubscriptionPayload]:
         assert self.user
@@ -125,10 +126,10 @@ class Bot(commands.AutoBot):
         error = payload.exception
         ctx = payload.context
 
-        if isinstance(error, (commands.CommandNotFound, commands.GuardFailure)):
-            return
-        elif isinstance(error, commands.CommandOnCooldown):
+        if isinstance(error, commands.CommandOnCooldown):
             await ctx.reply(f"You are on cooldown. Try again in {int(error.remaining)} seconds.")
+            return
+        elif isinstance(error, (commands.CommandNotFound, commands.GuardFailure)):
             return
 
         LOGGER.exception(error, exc_info=error, stack_info=True)
