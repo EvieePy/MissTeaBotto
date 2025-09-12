@@ -32,6 +32,11 @@ class WebhooksT(TypedDict):
     discord: str
 
 
+class SpotifyT(TypedDict):
+    client_id: str
+    client_secret: str
+
+
 class ConfigT(TypedDict):
     notifications: int
     bot: BotOptionsT
