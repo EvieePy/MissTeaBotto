@@ -15,6 +15,7 @@ limitations under the License.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -26,6 +27,7 @@ from .config import config
 
 
 if TYPE_CHECKING:
+    from aiohttp import ClientSession
     from cryptography.fernet import Fernet
     from twitchio.authentication import UserTokenPayload
 
@@ -36,9 +38,10 @@ LOGGER: logging.Logger = logging.getLogger("Bot")
 
 
 class Bot(commands.AutoBot):
-    def __init__(self, *, db: Database, fern: Fernet) -> None:
+    def __init__(self, *, db: Database, fern: Fernet, session: ClientSession) -> None:
         self.db = db
         self.fern = fern
+        self.session = session
 
         options = config["bot"]
         super().__init__(**options, prefix=self.prefix)
@@ -86,8 +89,7 @@ class Bot(commands.AutoBot):
         refresh = payload.refresh_token
         user_id = payload.user_id
 
-        if not user_id:
-            # Should never be True (TwitchIO quirk)
+        if not user_id:  # Should never be True (TwitchIO quirk)
             return
 
         encrypted_at = self.fern.encrypt(token.encode()).decode()
@@ -95,8 +97,7 @@ class Bot(commands.AutoBot):
         await self.db.add_token(user_id, encrypted_at, encrypted_rt)
 
         assert self.user
-        if user_id == self.user.id:
-            # Don't subscribe to events for Bot...
+        if user_id == self.user.id:  # Don't subscribe to events for Bot...
             return
 
         await self.subscribe(user_id=user_id)
@@ -113,7 +114,7 @@ class Bot(commands.AutoBot):
 
             await self.add_token(token=token, refresh=refresh)
 
-    # NOTE: Twitchio Fix...
+    # NOTE: Twitchio Fix... (Type buggo)
     async def prefix(self, _: commands.Bot, message: twitchio.ChatMessage) -> list[str]:
         # TODO: Do this later...
 
@@ -122,8 +123,35 @@ class Bot(commands.AutoBot):
 
     async def event_command_error(self, payload: commands.CommandErrorPayload) -> None:
         error = payload.exception
+        ctx = payload.context
 
-        if isinstance(error, commands.CommandNotFound):
+        if isinstance(error, (commands.CommandNotFound, commands.GuardFailure)):
+            return
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.reply(f"You are on cooldown. Try again in {int(error.remaining)} seconds.")
             return
 
         LOGGER.exception(error, exc_info=error, stack_info=True)
+
+    async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
+        if not payload.broadcaster or payload.broadcaster.id != self.owner_id:
+            return
+
+        webhook = config["webhooks"]["discord"]
+        if not webhook:
+            return
+
+        # Discords embed bot vs Twitch's Embed data are slightly out of sync...
+        await asyncio.sleep(5)
+
+        webhook = config["webhooks"]["discord"]
+        url = f"https://twitch.tv/{payload.broadcaster.name}"
+
+        data = {
+            "allowed_mentions": {"parse": ["roles"]},
+            "content": f"<@&{config['notifications']}> {payload.broadcaster.name} is live and streaming!\n\n{url}",
+        }
+
+        async with self.session.post(webhook, json=data) as resp:
+            if resp.status >= 300:
+                LOGGER.warning("Unable to send discord live notification: %s", resp.status)
