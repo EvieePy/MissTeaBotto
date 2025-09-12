@@ -23,8 +23,8 @@ import twitchio
 from twitchio import eventsub
 from twitchio.ext import commands
 
-from .config import config
 from .adapter import CustomAdapter
+from .config import config
 
 
 if TYPE_CHECKING:

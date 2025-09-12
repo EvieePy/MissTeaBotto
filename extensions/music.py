@@ -26,6 +26,7 @@ from twitchio.ext import commands
 
 import core
 
+
 if TYPE_CHECKING:
     from core.types_ import SpotifyRespT
 
@@ -100,11 +101,11 @@ class Music(commands.Component):
                     data = await resp.json()
                 except Exception:
                     return True
-                
+
                 return data
 
     def parse_search(self, resp: dict[str, Any]) -> None | dict[str, Any]:
-        tracks = resp.get("tracks", None)
+        tracks = resp.get("tracks")
         if not tracks:
             return
 

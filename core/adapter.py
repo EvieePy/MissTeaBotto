@@ -20,16 +20,18 @@ import base64
 import datetime
 import logging
 import secrets
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
+from starlette.responses import RedirectResponse, Response
 from twitchio import web
-from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse
 
 from .config import config
 
+
 if TYPE_CHECKING:
+    from starlette.requests import Request
+
     from .bot import Bot
     from .types_ import SpotifyRespT
 
