@@ -94,3 +94,48 @@ class Database:
             records = await conn.fetch(query, record_class=TokenModel)
 
         return records
+
+    async def batch_add_points(self, speakers: dict[str, Any], *, points: int) -> None:
+        assert self.pool
+
+        query = """INSERT INTO
+        gambles (user_id, points)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id)
+        DO UPDATE SET points = gambles.points + $2
+        """
+
+        args = [(k, points) for k in speakers]
+        async with self.pool.acquire() as conn:
+            await conn.executemany(query, args)
+
+    async def fetch_all_points(self, order: bool = False) -> list[GambleModel]:
+        assert self.pool
+
+        query = """SELECT * FROM gambles ORDER BY points DESC""" if order else """SELECT * FROM gambles"""
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(query, record_class=GambleModel)
+
+        return records
+
+    async def fetch_points(self, user_id: str) -> GambleModel | None:
+        assert self.pool
+
+        query = """SELECT * FROM gambles WHERE user_id = $1"""
+
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(query, user_id, record_class=GambleModel)
+
+    async def update_points(self, user_id: str, points: float) -> GambleModel | None:
+        assert self.pool
+
+        query = """INSERT INTO
+        gambles (user_id, points)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id)
+        DO UPDATE SET points = gambles.points + $2
+        RETURNING *
+        """
+
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(query, user_id, points, record_class=GambleModel)

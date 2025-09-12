@@ -18,14 +18,20 @@ from typing import Any
 import asyncpg
 
 
-__all__ = ("TokenModel",)
+__all__ = ("GambleModel", "TokenModel")
 
 
-class TokenModel(asyncpg.Record):
-    access_token: str
-    refresh_token: str
-    scopes: ...
-    user_id: str
-
+class BaseModel(asyncpg.Record):
     def __getattr__(self, attr: str) -> Any:
         return self[attr]
+
+
+class TokenModel(BaseModel):
+    access_token: str
+    refresh_token: str
+    user_id: str
+
+
+class GambleModel(BaseModel):
+    user_id: str
+    points: int
