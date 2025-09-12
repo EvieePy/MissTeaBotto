@@ -1,0 +1,178 @@
+"""Copyright 2025 MystyPy
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+from __future__ import annotations
+
+import base64
+import logging
+import urllib.parse
+from typing import TYPE_CHECKING, Any
+
+import aiohttp
+import twitchio
+from twitchio.ext import commands
+
+import core
+
+if TYPE_CHECKING:
+    from core.types_ import SpotifyRespT
+
+
+SPOTIFY_BASE = "https://api.spotify.com/v1"
+SPOTIFY_TOKEN = "https://accounts.spotify.com/api/token"
+SPOTIFY_SEARCH = SPOTIFY_BASE + "/search"
+SPOTIFY_DEVICES = SPOTIFY_BASE + "/me/player/devices"
+SPOTIFY_QUEUE = SPOTIFY_BASE + "/me/player/queue"
+
+
+LOGGER: logging.Logger = logging.getLogger(__name__)
+
+
+class Music(commands.Component):
+    def __init__(self, bot: core.Bot) -> None:
+        self.bot = bot
+        self.db = bot.db
+
+        self._device: str | None = None
+
+    async def _refresh(self, refresh: str) -> str | None:
+        client_id = core.config["spotify"]["client_id"]
+        client_secret = core.config["spotify"]["client_secret"]
+
+        secret = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        headers = {"Content-Type": "application/x-www-form-urlencoded", "Authorization": secret}
+
+        data = aiohttp.FormData()
+        data.add_field("refresh_token", refresh)
+        data.add_field("grant_type", "refresh_token")
+
+        async with self.bot.session.post(SPOTIFY_TOKEN, headers=headers, data=data) as resp:
+            if resp.status != 200:
+                LOGGER.error("Unable to refresh Spotify token: %s. Consider re-authenticating", resp.status)
+                return
+
+            oauth: SpotifyRespT = await resp.json()
+
+            token = oauth["access_token"]
+            encrypted_at = self.bot.fern.encrypt(token.encode()).decode()
+            encrypted_rt = self.bot.fern.encrypt(oauth["refresh_token"].encode()).decode()
+            await self.bot.db.upsert_spotify(encrypted_at, encrypted_rt)
+
+            return token
+
+    async def make_request(self, url: str, method: str = "GET") -> dict[str, Any] | None | bool:
+        payload = await self.db.fetch_spotify()
+        if not payload:
+            return
+
+        token = self.bot.fern.decrypt(payload.token).decode()
+        refresh = self.bot.fern.decrypt(payload.refresh).decode()
+
+        new: str | None = token
+
+        while True:
+            headers = {"Authorization": f"Bearer {new}"}
+
+            async with self.bot.session.request(method, url, headers=headers) as resp:
+                if resp.status == 401:
+                    new = await self._refresh(refresh)
+
+                    if new is None:
+                        return
+
+                if resp.status == 204:
+                    return True
+
+                # NOTE: Spotify big dumb; 204 is the expected status code. 200 is returned instead with an empty payload...
+                try:
+                    data = await resp.json()
+                except Exception:
+                    return True
+                
+                return data
+
+    def parse_search(self, resp: dict[str, Any]) -> None | dict[str, Any]:
+        tracks = resp.get("tracks", None)
+        if not tracks:
+            return
+
+        items = tracks["items"]
+        if not items:
+            return
+
+        for item in items:
+            if item["type"] == "track":
+                return item
+
+    async def find_device(self) -> None:
+        data = await self.make_request(SPOTIFY_DEVICES)
+        if not data or data is True:
+            return
+
+        devices = data.get("devices", None)
+        if not devices:
+            return
+
+        for device in devices:
+            if device["type"].lower() != "computer":
+                continue
+
+            self._device = device["id"]
+            break
+
+    async def enque_track(self, track: str) -> None | bool | dict[str, Any]:
+        await self.find_device()
+        if not self._device:
+            raise core.SpotifyDeviceNotFound("No device for playback is available.")
+
+        encoded = urllib.parse.quote(track)
+        return await self.make_request(SPOTIFY_QUEUE + f"?uri={encoded}&device_id={self._device}", method="POST")
+
+    @commands.reward_command(id="3231fc73-5a6a-4fdb-a0dc-40bf8e2260b9", invoke_when=commands.RewardStatus.unfulfilled)
+    async def redeem_song(self, ctx: commands.Context[core.Bot], *, prompt: str | None = None) -> None:
+        assert ctx.redemption and isinstance(ctx.redemption, twitchio.ChannelPointsRedemptionAdd)
+        assert self.bot.owner_id
+
+        if not prompt:
+            await ctx.send("You need to actually request a song mystyp2Pats")
+            await ctx.redemption.refund(token_for=self.bot.owner_id)
+            return
+
+        elif len(prompt) < 5:
+            await ctx.send("You need to actually request a song mystyp2Pats More than 5 characters!")
+            await ctx.redemption.refund(token_for=self.bot.owner_id)
+            return
+
+        encoded = urllib.parse.quote(prompt)
+        resp = await self.make_request(url=f"{SPOTIFY_SEARCH}?type=track&limit=5&q={encoded}")
+
+        if not resp or resp is True:
+            await ctx.redemption.refund(token_for=self.bot.owner_id)
+            await ctx.send("An error occurred. Please try again later mystyp2Cry Your points were refunded.")
+            return
+
+        track = self.parse_search(resp)
+
+        if not track:
+            await ctx.redemption.refund(token_for=self.bot.owner_id)
+            await ctx.send(f"A track with the prompt '{prompt}' could not be found mystyp2Cry Your points were refunded.")
+            return
+
+        if await self.enque_track(track["uri"]) is True:
+            await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']}!")
+
+
+async def setup(bot: core.Bot) -> None:
+    await bot.add_component(Music(bot))
