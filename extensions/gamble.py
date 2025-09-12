@@ -47,6 +47,7 @@ class GambleComponent(commands.Component):
 
         self.base_exp: int = 100
         self.base_per: int = 50
+        self.sheps_per: int = 55
         self.mul: int = 10
 
         self.rob_exp: int = 100
@@ -148,8 +149,9 @@ class GambleComponent(commands.Component):
         mul = self.all_points_mul if everything else self.point_mul
         total = old.points if everything else (amount or 1)
 
+        per = self.sheps_per if chatter.id == "124081412" else self.base_per
         selection = random.randint(0, self.base_exp * self.mul)
-        win = selection <= (self.base_per * self.mul)
+        win = selection <= (per * self.mul)
 
         points = int(-total if not win else ((total) * mul))
         updated = await self.db.update_points(chatter.id, points)
