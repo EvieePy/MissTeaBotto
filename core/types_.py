@@ -35,6 +35,7 @@ class WebhooksT(TypedDict):
 class SpotifyT(TypedDict):
     client_id: str
     client_secret: str
+    redirect: str
 
 
 class ConfigT(TypedDict):
@@ -42,3 +43,12 @@ class ConfigT(TypedDict):
     bot: BotOptionsT
     database: DatabaseT
     webhooks: WebhooksT
+    spotify: SpotifyT
+
+
+class SpotifyRespT(TypedDict):
+    access_token: str
+    refresh_token: str
+    expires_in: str
+    scope: str
+    token_type: str
