@@ -8,3 +8,9 @@ CREATE TABLE IF NOT EXISTS gambles(
     user_id TEXT PRIMARY KEY,
     points BIGINT DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS spotify(
+    id SERIAL PRIMARY KEY,
+    token TEXT UNIQUE NOT NULL,
+    refresh TEXT UNIQUE NOT NULL
+);
