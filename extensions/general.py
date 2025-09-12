@@ -81,6 +81,10 @@ class GeneralComponent(commands.Component):
     async def discord_command(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("https://discord.gg/cft7GbQt58")
 
+    @commands.command(aliases=["l", "bye"])
+    async def lurk(self, ctx: commands.Context[core.Bot]) -> None:
+        await ctx.reply(f"Thanks for the lurky lurk {ctx.chatter.mention} mystyp2Love")
+
 
 async def setup(bot: core.Bot) -> None:
     await bot.add_component(GeneralComponent(bot))
