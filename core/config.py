@@ -33,6 +33,7 @@ try:
     BID: str = env["BOT_ID"]  # type: ignore
     OID: str = env["OWNER_ID"]  # type: ignore
     DWEB: str = env["DISCORD_WEBHOOK"]  # type: ignore
+    SPOT: str = env["SPOTIFY_SECRET"]  # type: ignore
 except KeyError as e:
     raise RuntimeError("Unable to start Bot: An environment variable is missing.") from e
 
@@ -45,3 +46,5 @@ with open("config.yaml") as fp:
     config["bot"]["bot_id"] = BID
     config["bot"]["owner_id"] = OID
     config["webhooks"]["discord"] = DWEB
+    config["spotify"]["client_secret"] = SPOT
+    
