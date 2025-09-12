@@ -50,7 +50,7 @@ class GambleComponent(commands.Component):
         self.mul: int = 10
 
         self.rob_exp: int = 100
-        self.rob_per: int = 10
+        self.rob_per: int = 15
 
         self.point_mul: float = 1.75
         self.all_points_mul: float = 2.25
