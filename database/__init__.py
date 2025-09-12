@@ -139,3 +139,28 @@ class Database:
 
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, user_id, points, record_class=GambleModel)
+
+    async def upsert_spotify(self, token: str, refresh: str) -> None:
+        assert self.pool
+
+        query = """INSERT INTO spotify (token, refresh)
+        VALUES ($1, $2)
+        ON CONFLICT (token)
+        DO UPDATE SET token = $1, refresh = $2
+        """
+
+        async with self.pool.acquire() as conn:
+            await conn.execute(query, token, refresh)
+
+    async def fetch_spotify(self) -> SpotifyModel | None:
+        assert self.pool
+
+        query = """SELECT * FROM spotify"""
+
+        async with self.pool.acquire() as conn:
+            records = await conn.fetch(query, record_class=SpotifyModel)
+
+        if not records:
+            return
+
+        return records[0]
