@@ -47,4 +47,3 @@ with open("config.yaml") as fp:
     config["bot"]["owner_id"] = OID
     config["webhooks"]["discord"] = DWEB
     config["spotify"]["client_secret"] = SPOT
-    

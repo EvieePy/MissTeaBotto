@@ -26,7 +26,7 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 class AdminComponent(commands.Component):
     def __init__(self, bot: core.Bot) -> None:
         self.bot = bot
-    
+
     @commands.Component.guard()
     async def owner_guard(self, ctx: commands.Context[core.Bot]) -> bool:
         return ctx.chatter.id == self.bot.owner_id
@@ -44,14 +44,16 @@ class AdminComponent(commands.Component):
             LOGGER.warning("Unable to reload module %r: %s.", module, e)
         else:
             await ctx.send(f"Successfully reloaded: {module}")
-    
+
     @commands.command()
-    async def create_reward(self, ctx: commands.Context[core.Bot], name: str, cost: int, skip: bool, *, prompt: str | None = None) -> None:
+    async def create_reward(
+        self, ctx: commands.Context[core.Bot], name: str, cost: int, skip: bool, *, prompt: str | None = None
+    ) -> None:
         assert self.bot.owner_id
-        
+
         user = self.bot.create_partialuser(user_id=self.bot.owner_id)
         reward = await user.create_custom_reward(name, cost, prompt=prompt, redemptions_skip_queue=skip)
-        
+
         await ctx.reply(f"Successfully created reward: {reward.title} (ID: {reward.id})")
 
 
