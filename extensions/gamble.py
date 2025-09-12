@@ -232,13 +232,13 @@ class GambleComponent(commands.Component):
 
         await ctx.reply(f"{user.mention} has {record.points} points!")
 
-    @points.command(aliases=["donate", "share"])
+    @points.command(aliases=["donate"])
     @commands.is_broadcaster()
     async def give(self, ctx: commands.Context[core.Bot], user: twitchio.User, *, amount: int) -> None:
         await self.db.update_points(user.id, amount)
         await ctx.reply(f"You have granted {user.mention} {amount} points mystyp2Sip")
 
-    @points.command()
+    @points.command(aliases=["share"])
     async def send(self, ctx: commands.Context[core.Bot], user: twitchio.User, *, amount: str) -> None:
         chatter = ctx.chatter
 
