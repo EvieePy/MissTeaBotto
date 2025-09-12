@@ -28,6 +28,12 @@ class DatabaseT(TypedDict):
     dsn: str
 
 
+class WebhooksT(TypedDict):
+    discord: str
+
+
 class ConfigT(TypedDict):
+    notifications: int
     bot: BotOptionsT
     database: DatabaseT
+    webhooks: WebhooksT
