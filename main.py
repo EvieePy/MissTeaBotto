@@ -16,6 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 
+import aiohttp
 from cryptography.fernet import Fernet
 from twitchio.utils import setup_logging
 
@@ -35,7 +36,11 @@ def main() -> None:
     fern = Fernet(key)
 
     async def runner() -> None:
-        async with Database(**core.config["database"]) as db, core.Bot(db=db, fern=fern) as bot:
+        async with (
+            aiohttp.ClientSession() as session,
+            Database(**core.config["database"]) as db,
+            core.Bot(db=db, fern=fern, session=session) as bot,
+        ):
             await bot.start()
 
     try:
