@@ -13,12 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import datetime
 from typing import Any
 
 import asyncpg
 
 
-__all__ = ("GambleModel", "SpotifyModel", "TokenModel")
+__all__ = ("GambleModel", "SpotifyModel", "TokenModel", "FirstRedeemModel", "ModeratorModel")
 
 
 class BaseModel(asyncpg.Record):
@@ -40,3 +41,14 @@ class GambleModel(BaseModel):
 class SpotifyModel(BaseModel):
     token: str
     refresh: str
+
+
+class FirstRedeemModel(BaseModel):
+    id: int
+    user_id: str
+    dt: datetime.datetime
+
+
+class ModeratorModel(BaseModel):
+    user_id: str
+    status: int
