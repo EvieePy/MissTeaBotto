@@ -14,3 +14,17 @@ CREATE TABLE IF NOT EXISTS spotify(
     token TEXT UNIQUE NOT NULL,
     refresh TEXT UNIQUE NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS firsts(
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    dt TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS mods(
+    user_id TEXT PRIMARY KEY,
+    status INT NOT NULL DEFAULT 0
+    -- 0 = Mod
+    -- 1 = Editor
+    -- 2 = Admin / Broadcaster
+);
