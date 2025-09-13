@@ -13,7 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .bot import Bot as Bot
-from .config import config as config
-from .exceptions import *
-from .enums import *
+import enum
+
+
+__all__ = ("ModStatus", )
+
+
+class ModStatus(enum.IntEnum):
+    mod = 0
+    editor = 1
+    admin = 2
