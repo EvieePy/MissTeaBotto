@@ -55,6 +55,7 @@ class Bot(commands.AutoBot):
             eventsub.ChannelFollowSubscription(broadcaster_user_id=user_id, moderator_user_id=user_id),
             eventsub.AdBreakBeginSubscription(broadcaster_user_id=user_id),
             eventsub.ChatNotificationSubscription(broadcaster_user_id=user_id, user_id=self.user.id),
+            eventsub.StreamOnlineSubscription(broadcaster_user_id=user_id),
             eventsub.StreamOfflineSubscription(broadcaster_user_id=user_id),
             eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=user_id),
             eventsub.ChannelPointsRedeemUpdateSubscription(broadcaster_user_id=user_id),
