@@ -49,8 +49,10 @@ class CustomAdapter(web.StarletteAdapter):
         self.spotify_state: dict[str, datetime.datetime] = {}
 
         self._clear_state_task: asyncio.Task[None] = asyncio.create_task(self._clear_state())
+        
         self.add_route("/spotify/callback", self.spotify_callback, methods=["GET"])
         self.add_route("/oauth/spotify", self.spotify_oauth, methods=["GET"])
+        self.add_route("/overlays/first", self.first_redeem_route, methods=["GET"])
 
     async def _clear_state(self) -> None:
         while not self._closing:
@@ -127,7 +129,6 @@ class CustomAdapter(web.StarletteAdapter):
 
         async with session.post(SPOTIFY_TOKEN, data=data, headers=headers) as resp:
             if resp.status != 200:
-                LOGGER.warning(await resp.text())
                 LOGGER.warning("Unexpected status code handling Spotify OAuth: %s", resp.status)
                 return Response(f"Unexpected reponse from Spotify: {resp.status}.")
 
@@ -138,3 +139,14 @@ class CustomAdapter(web.StarletteAdapter):
         await bot.db.upsert_spotify(encrypted_at, encrypted_rt)
 
         return Response("Success. You can now leave this page.")
+    
+    async def first_redeem_route(self, request: Request) -> Response:
+        bot = cast("Bot", self.client)
+        
+        payload = await bot.db.fetch_first_redeem()
+        if not payload:
+            return Response("First: None?")
+        
+        user = await bot.fetch_user(id=payload.user_id)
+        return Response(f"First: {user.display_name}")
+     
