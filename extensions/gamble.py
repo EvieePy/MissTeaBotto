@@ -165,7 +165,7 @@ class GambleComponent(commands.Component):
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(chatter.id)
-        if not record or record.points == 0:
+        if not record or record.points <= 0:
             await ctx.reply("You have no points mystyp2Cry")
             return
 
@@ -195,7 +195,7 @@ class GambleComponent(commands.Component):
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(chatter.id)
-        if not record or record.points == 0:
+        if not record or record.points <= 0:
             await ctx.reply("You have no points mystyp2Cry")
             return
 
@@ -268,7 +268,7 @@ class GambleComponent(commands.Component):
         await ctx.reply(f"You sent {user.mention} {parsed} points mystyp2Sip")
 
     @commands.command()
-    @commands.cooldown(rate=1, per=300)
+    @commands.cooldown(rate=2, per=120, base=commands.GCRACooldown)
     async def rob(self, ctx: commands.Context[core.Bot], *, user: twitchio.User) -> None:
         """Attempt to rob another user. 10% chance to win, 10% chance to backfire!"""
         chatter = ctx.chatter
