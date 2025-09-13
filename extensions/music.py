@@ -53,27 +53,29 @@ class Music(commands.Component):
         client_secret = core.config["spotify"]["client_secret"]
 
         secret = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-        headers = {"Content-Type": "application/x-www-form-urlencoded", "Authorization": secret}
+        headers = {"Content-Type": "application/x-www-form-urlencoded", "Authorization": f"Basic {secret}"}
 
         data = aiohttp.FormData()
         data.add_field("refresh_token", refresh)
         data.add_field("grant_type", "refresh_token")
-
+        
         async with self.bot.session.post(SPOTIFY_TOKEN, headers=headers, data=data) as resp:
             if resp.status != 200:
                 LOGGER.error("Unable to refresh Spotify token: %s. Consider re-authenticating", resp.status)
                 return
 
             oauth: SpotifyRespT = await resp.json()
-
+            
             token = oauth["access_token"]
+            new_refresh = oauth.get("refresh_token", None) or refresh
+
             encrypted_at = self.bot.fern.encrypt(token.encode()).decode()
-            encrypted_rt = self.bot.fern.encrypt(oauth["refresh_token"].encode()).decode()
+            encrypted_rt = self.bot.fern.encrypt(new_refresh.encode()).decode()
             await self.bot.db.upsert_spotify(encrypted_at, encrypted_rt)
 
             return token
 
-    async def make_request(self, url: str, method: str = "GET") -> dict[str, Any] | None | bool:
+    async def make_request(self, url: str, method: str = "GET") -> dict[str, Any] | None:
         payload = await self.db.fetch_spotify()
         if not payload:
             return
@@ -89,18 +91,21 @@ class Music(commands.Component):
             async with self.bot.session.request(method, url, headers=headers) as resp:
                 if resp.status == 401:
                     new = await self._refresh(refresh)
-
+                    
                     if new is None:
                         return
 
-                if resp.status == 204:
-                    return True
+                    continue
 
-                # NOTE: Spotify big dumb; 204 is the expected status code. 200 is returned instead with an empty payload...
+                if resp.status == 204:
+                    return
+
+                resp.raise_for_status()
+
                 try:
                     data = await resp.json()
                 except Exception:
-                    return True
+                    return
 
                 return data
 
@@ -118,8 +123,12 @@ class Music(commands.Component):
                 return item
 
     async def find_device(self) -> None:
-        data = await self.make_request(SPOTIFY_DEVICES)
-        if not data or data is True:
+        try:
+            data = await self.make_request(SPOTIFY_DEVICES)
+        except Exception:
+            return
+
+        if not data:
             return
 
         devices = data.get("devices", None)
@@ -134,7 +143,9 @@ class Music(commands.Component):
             break
 
     async def enque_track(self, track: str) -> None | bool | dict[str, Any]:
-        await self.find_device()
+        if not self._device:
+            await self.find_device()
+
         if not self._device:
             raise core.SpotifyDeviceNotFound("No device for playback is available.")
 
@@ -157,9 +168,14 @@ class Music(commands.Component):
             return
 
         encoded = urllib.parse.quote(prompt)
-        resp = await self.make_request(url=f"{SPOTIFY_SEARCH}?type=track&limit=5&q={encoded}")
+        resp: dict[str, Any] | None = None
 
-        if not resp or resp is True:
+        try:
+            resp = await self.make_request(url=f"{SPOTIFY_SEARCH}?type=track&limit=5&q={encoded}")
+        except Exception:
+            pass
+
+        if not resp:
             await ctx.redemption.refund(token_for=self.bot.owner_id)
             await ctx.send("An error occurred. Please try again later mystyp2Cry Your points were refunded.")
             return
@@ -171,8 +187,13 @@ class Music(commands.Component):
             await ctx.send(f"A track with the prompt '{prompt}' could not be found mystyp2Cry Your points were refunded.")
             return
 
-        if await self.enque_track(track["uri"]) is True:
-            await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']}!")
+        try:
+            await self.enque_track(track["uri"])
+        except Exception as e:
+            await ctx.send(f"{ctx.chatter.mention} an error occurred trying to queue your track: {e}.")
+            return
+
+        await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']}!")
 
 
 async def setup(bot: core.Bot) -> None:
