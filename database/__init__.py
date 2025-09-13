@@ -16,6 +16,7 @@ limitations under the License.
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 from typing import TYPE_CHECKING, Any, Self
 
@@ -164,3 +165,44 @@ class Database:
             return
 
         return records[0]
+    
+    async def add_first_redeem(self, user_id: str) -> None:
+        assert self.pool
+        
+        query = """INSERT INTO firsts (user_id, dt) VALUES ($1, $2)"""
+        now = datetime.datetime.now(tz=datetime.UTC)
+        
+        async with self.pool.acquire() as conn:
+            await conn.execute(query, user_id, now)
+
+    async def fetch_first_redeem(self) -> FirstRedeemModel | None:
+        assert self.pool
+        
+        query = """SELECT * FROM firsts ORDER BY dt DESC LIMIT 1"""
+        
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, record_class=FirstRedeemModel)
+            
+        if not rows:
+            return
+        
+        return rows[0]
+    
+    async def upsert_mod(self, user_id: str, status: int = 0) -> None:
+        assert self.pool
+        
+        query = """INSERT INTO mods (user_id, status) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET status = $2"""
+        
+        async with self.pool.acquire() as conn:
+            await conn.execute(query, user_id, status)
+            
+
+    async def fetch_mod(self, user_id: str) -> ModeratorModel | None:
+        assert self.pool
+        
+        query = """SELECT * FROM mods WHERE user_id = $1"""
+        
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(query, user_id, record_class=ModeratorModel)
+            
+        return row
