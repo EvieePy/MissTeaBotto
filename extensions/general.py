@@ -15,6 +15,7 @@ limitations under the License.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
 from typing import TYPE_CHECKING
@@ -64,6 +65,17 @@ class GeneralComponent(commands.Component):
             moderator=self.bot.user,
             color="orange",
         )
+        
+        await asyncio.sleep(payload.duration)
+        await payload.broadcaster.send_message(message="Welcome back from ads! mystyp2Pats", sender=self.bot.user)
+        
+    async def event_custom_redemption_add(self, payload: twitchio.ChannelPointsRedemptionAdd) -> None:
+        if payload.broadcaster.id != self.bot.owner_id:
+            return
+        
+        title = payload.reward.title
+        if title == "First!":
+            await self.bot.db.add_first_redeem(payload.user.id)
 
     @commands.group()
     async def socials(self, ctx: commands.Context[core.Bot]) -> None:
@@ -77,14 +89,14 @@ class GeneralComponent(commands.Component):
     async def github(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("https://github.com/EvieePy")
 
-    @commands.command(aliases=["disco", "dc"])
+    @commands.command(aliases=["disco", "dc", "discord"])
     async def discord_command(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("https://discord.gg/cft7GbQt58")
 
     @commands.command(aliases=["l", "bye"])
     async def lurk(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.reply(f"Thanks for the lurky lurk {ctx.chatter.mention} mystyp2Love")
-        
+
     @commands.command()
     async def code(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.reply("My code: https://github.com/EvieePy/MissTeaBotto")
