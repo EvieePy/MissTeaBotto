@@ -16,7 +16,7 @@ limitations under the License.
 import enum
 
 
-__all__ = ("ModStatus", )
+__all__ = ("ModStatus",)
 
 
 class ModStatus(enum.IntEnum):

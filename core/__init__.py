@@ -15,5 +15,5 @@ limitations under the License.
 
 from .bot import Bot as Bot
 from .config import config as config
-from .exceptions import *
 from .enums import *
+from .exceptions import *

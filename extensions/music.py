@@ -58,14 +58,14 @@ class Music(commands.Component):
         data = aiohttp.FormData()
         data.add_field("refresh_token", refresh)
         data.add_field("grant_type", "refresh_token")
-        
+
         async with self.bot.session.post(SPOTIFY_TOKEN, headers=headers, data=data) as resp:
             if resp.status != 200:
                 LOGGER.error("Unable to refresh Spotify token: %s. Consider re-authenticating", resp.status)
                 return
 
             oauth: SpotifyRespT = await resp.json()
-            
+
             token = oauth["access_token"]
             new_refresh = oauth.get("refresh_token", None) or refresh
 
@@ -91,7 +91,7 @@ class Music(commands.Component):
             async with self.bot.session.request(method, url, headers=headers) as resp:
                 if resp.status == 401:
                     new = await self._refresh(refresh)
-                    
+
                     if new is None:
                         return
 

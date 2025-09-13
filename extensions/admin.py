@@ -56,7 +56,7 @@ class AdminComponent(commands.Component):
         reward = await user.create_custom_reward(name, cost, prompt=prompt, redemptions_skip_queue=skip)
 
         await ctx.reply(f"Successfully created reward: {reward.title} (ID: {reward.id})")
-        
+
     @commands.command(aliases=["mod_update"])
     async def update_mod(self, ctx: commands.Context[core.Bot], user: twitchio.User, status: int = 0) -> None:
         await self.bot.db.upsert_mod(user.id, status=status)

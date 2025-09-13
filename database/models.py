@@ -19,7 +19,7 @@ from typing import Any
 import asyncpg
 
 
-__all__ = ("GambleModel", "SpotifyModel", "TokenModel", "FirstRedeemModel", "ModeratorModel")
+__all__ = ("FirstRedeemModel", "GambleModel", "ModeratorModel", "SpotifyModel", "TokenModel")
 
 
 class BaseModel(asyncpg.Record):
