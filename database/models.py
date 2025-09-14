@@ -51,4 +51,4 @@ class FirstRedeemModel(BaseModel):
 
 class ModeratorModel(BaseModel):
     user_id: str
-    status: int
+    flags: int

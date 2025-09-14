@@ -188,13 +188,13 @@ class Database:
 
         return rows[0]
 
-    async def upsert_mod(self, user_id: str, status: int = 0) -> None:
+    async def upsert_mod(self, user_id: str, flags: int = 0) -> None:
         assert self.pool
 
-        query = """INSERT INTO mods (user_id, status) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET status = $2"""
+        query = """INSERT INTO mods (user_id, flags) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET flags = $2"""
 
         async with self.pool.acquire() as conn:
-            await conn.execute(query, user_id, status)
+            await conn.execute(query, user_id, flags)
 
     async def fetch_mod(self, user_id: str) -> ModeratorModel | None:
         assert self.pool

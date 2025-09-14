@@ -23,8 +23,5 @@ CREATE TABLE IF NOT EXISTS firsts(
 
 CREATE TABLE IF NOT EXISTS mods(
     user_id TEXT PRIMARY KEY,
-    status INT NOT NULL DEFAULT 0
-    -- 0 = Mod
-    -- 1 = Editor
-    -- 2 = Admin / Broadcaster
+    flags INT NOT NULL DEFAULT 0
 );
