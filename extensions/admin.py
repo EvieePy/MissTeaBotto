@@ -24,6 +24,16 @@ import core
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+class FlagConverter(commands.Converter[int]):
+    async def convert(self, ctx: commands.Context[core.Bot], arg: str) -> core.ModPermissions:
+        try:
+            value = int(arg)
+        except ValueError:
+            return core.ModPermissions[arg]
+
+        return core.ModPermissions(value)
+
+
 class AdminComponent(commands.Component):
     def __init__(self, bot: core.Bot) -> None:
         self.bot = bot
@@ -48,7 +58,13 @@ class AdminComponent(commands.Component):
 
     @commands.command()
     async def create_reward(
-        self, ctx: commands.Context[core.Bot], name: str, cost: int, skip: bool, *, prompt: str | None = None
+        self,
+        ctx: commands.Context[core.Bot],
+        name: str,
+        cost: int,
+        skip: bool,
+        *,
+        prompt: str | None = None,
     ) -> None:
         assert self.bot.owner_id
 
@@ -58,9 +74,18 @@ class AdminComponent(commands.Component):
         await ctx.reply(f"Successfully created reward: {reward.title} (ID: {reward.id})")
 
     @commands.command(aliases=["mod_update"])
-    async def update_mod(self, ctx: commands.Context[core.Bot], user: twitchio.User, status: int = 0) -> None:
-        await self.bot.db.upsert_mod(user.id, status=status)
-        await ctx.reply(f"Updated {user.mention} to {core.ModStatus(status).name}.")
+    async def update_mod(self, ctx: commands.Context[core.Bot], user: twitchio.User, *perms: FlagConverter) -> None:
+        name = ""
+        flags = 0
+
+        for perm in set(perms):
+            assert isinstance(perm, core.ModPermissions)
+
+            flags |= perm
+            name += f"{perm.name}, "
+
+        await self.bot.db.upsert_mod(user.id, flags=flags)
+        await ctx.reply(f"Updated {user.mention} with {name.removesuffix(', ')}.")
 
 
 async def setup(bot: core.Bot) -> None:
