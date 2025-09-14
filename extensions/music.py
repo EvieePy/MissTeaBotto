@@ -193,7 +193,8 @@ class Music(commands.Component):
             await ctx.send(f"{ctx.chatter.mention} an error occurred trying to queue your track: {e}.")
             return
 
-        await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']}!")
+        artists = ", ".join(a["name"] for a in track["artists"])
+        await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']} by {artists}")
 
 
 async def setup(bot: core.Bot) -> None:
