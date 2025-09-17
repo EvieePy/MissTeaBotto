@@ -30,7 +30,7 @@ __all__ = ("ModPermissions", "permissions_check")
 
 
 class ModPermissions(enum.IntFlag):
-    none = enum.auto()
+    none = 0
 
     # Special case role bypasses any permissions...
     admin = enum.auto()
