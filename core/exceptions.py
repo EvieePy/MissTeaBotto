@@ -13,10 +13,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ("MissTeaException", "SpotifyDeviceNotFound")
+from twitchio.ext import commands
+
+
+__all__ = ("MissTeaException", "NoCommandFound", "NoPermissionForCommand", "SpotifyDeviceNotFound")
 
 
 class MissTeaException(Exception): ...
 
 
 class SpotifyDeviceNotFound(MissTeaException): ...
+
+
+class NoCommandFound(commands.CommandInvokeError): ...
+
+
+class NoPermissionForCommand(commands.CommandInvokeError): ...
