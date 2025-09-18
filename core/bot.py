@@ -25,6 +25,7 @@ from twitchio.ext import commands
 
 from .adapter import CustomAdapter
 from .config import config
+from .exceptions import *
 
 
 if TYPE_CHECKING:
@@ -124,13 +125,13 @@ class Bot(commands.AutoBot):
         return defaults
 
     async def event_command_error(self, payload: commands.CommandErrorPayload) -> None:
-        error = payload.exception
+        error = getattr(payload.exception, "original", payload.exception)
         ctx = payload.context
 
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.reply(f"You are on cooldown. Try again in {int(error.remaining)} seconds.")
             return
-        elif isinstance(error, (commands.CommandNotFound, commands.GuardFailure)):
+        elif isinstance(error, (commands.CommandNotFound, commands.GuardFailure, NoCommandFound, NoPermissionForCommand)):
             return
 
         LOGGER.exception(error, exc_info=error, stack_info=True)
