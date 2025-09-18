@@ -20,10 +20,11 @@ import base64
 import datetime
 import logging
 import secrets
+import urllib.parse
 from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response
 from twitchio import web
 
 from .config import config
@@ -53,6 +54,8 @@ class CustomAdapter(web.StarletteAdapter):
         self.add_route("/spotify/callback", self.spotify_callback, methods=["GET"])
         self.add_route("/oauth/spotify", self.spotify_oauth, methods=["GET"])
         self.add_route("/overlays/first", self.first_redeem_route, methods=["GET"])
+
+        self._first: list[str] = []
 
     async def _clear_state(self) -> None:
         while not self._closing:
@@ -142,10 +145,19 @@ class CustomAdapter(web.StarletteAdapter):
 
     async def first_redeem_route(self, request: Request) -> Response:
         bot = cast("Bot", self.client)
+        html = """<html><head><meta http-equiv="refresh" content="30"></head><body>First: {name}</body>"""
 
         payload = await bot.db.fetch_first_redeem()
         if not payload:
-            return Response("First: None?")
+            html = html.format(name="None?")
+            return HTMLResponse(html)
+
+        if self._first and self._first[0] == payload.user_id:
+            return HTMLResponse(html.format(name=self._first[1]))
 
         user = await bot.fetch_user(id=payload.user_id)
-        return Response(f"First: {user.display_name}")
+        name = urllib.parse.quote(user.display_name)
+        html = html.format(name=name)
+
+        self._first = [payload.user_id, name]
+        return HTMLResponse(html)
