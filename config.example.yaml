@@ -1,0 +1,11 @@
+bot:
+  default_prefix: ["!", "?"]
+database:
+  dsn: "postgresql://USER:PASSWORD@localhost:5432/DATABASE_NAME"
+webhooks:
+  discord: # Do not fill this configuration key! Use the .env instead!
+notifications: NOTIFICATIONS_ROLE
+spotify:
+  client_id: ...
+  client_secret: # Do not fill this configuration key! Use the .env instead!
+  redirect: "http://localhost:4343/spotify/callback"
