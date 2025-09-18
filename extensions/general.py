@@ -70,7 +70,7 @@ class GeneralComponent(commands.Component):
         await payload.broadcaster.send_message(message="Welcome back from ads! mystyp2Pats", sender=self.bot.user)
 
     async def event_custom_redemption_add(self, payload: twitchio.ChannelPointsRedemptionAdd) -> None:
-        if payload.broadcaster.id != self.bot.owner_id:
+        if payload.broadcaster.id == self.bot.owner_id:
             return
 
         title = payload.reward.title
@@ -89,7 +89,7 @@ class GeneralComponent(commands.Component):
     async def github(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("https://github.com/EvieePy")
 
-    @commands.command(aliases=["disco", "dc", "discord"])
+    @commands.command(name="discord", aliases=["disco", "dc"])
     async def discord_command(self, ctx: commands.Context[core.Bot]) -> None:
         await ctx.send("https://discord.gg/cft7GbQt58")
 

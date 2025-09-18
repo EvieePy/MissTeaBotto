@@ -73,7 +73,7 @@ class AdminComponent(commands.Component):
 
         await ctx.reply(f"Successfully created reward: {reward.title} (ID: {reward.id})")
 
-    @commands.command(aliases=["mod_update"])
+    @commands.command(name="modupdate", aliases=["mod_update"])
     async def update_mod(self, ctx: commands.Context[core.Bot], user: twitchio.User, *perms: FlagConverter) -> None:
         name = ""
         flags = 0
