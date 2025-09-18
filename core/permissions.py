@@ -62,7 +62,7 @@ def permissions_check(perms: ModPermissions) -> Any:
         if not payload:
             return False
 
-        if (payload.flags & perms) == ModPermissions.admin:
+        if (payload.flags & ModPermissions.admin) == ModPermissions.admin:
             return True
 
         return bool(payload.flags & perms)
