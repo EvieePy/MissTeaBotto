@@ -71,17 +71,18 @@ class ModeratorComponent(commands.Component):
     async def raid_error(self, payload: commands.CommandErrorPayload) -> bool | None: ...
 
     @commands.command()
-    async def perms(self, ctx: commands.Context[core.Bot]) -> None:
-        payload = await self.bot.db.fetch_mod(ctx.chatter.id)
+    async def perms(self, ctx: commands.Context[core.Bot], *, user: twitchio.User | None = None) -> None:
+        chatter = user or ctx.chatter
+        payload = await self.bot.db.fetch_mod(chatter.id)
 
         if not payload:
-            await ctx.reply("You have no granted moderator permissions mystyp2Cry")
+            await ctx.reply(f"{chatter.mention} has no granted moderator permissions mystyp2Cry")
             return
 
         flags = core.ModPermissions.perms(payload.flags)
         joined = ", ".join([str(p[0]) for p in flags if p[1]])
 
-        await ctx.reply(f"Your moderator permissions are: {joined}")
+        await ctx.reply(f"{chatter.mention} moderator permissions are: {joined}")
 
 
 async def setup(bot: core.Bot) -> None:
