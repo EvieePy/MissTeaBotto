@@ -35,6 +35,8 @@ if TYPE_CHECKING:
 
     from database import Database
 
+    from .types_ import StreamStateT
+
 
 LOGGER: logging.Logger = logging.getLogger("Bot")
 
@@ -44,6 +46,7 @@ class Bot(commands.AutoBot):
         self.db = db
         self.fern = fern
         self.session = session
+        self.stream_state: StreamStateT = {}
 
         options = config["bot"]
         super().__init__(**options, prefix=self.prefix, adapter=CustomAdapter())
@@ -83,9 +86,29 @@ class Bot(commands.AutoBot):
     async def setup_hook(self) -> None:
         await self.subscribe()
         await self.load_module("extensions")
+        await self.update_state()
 
     async def event_ready(self) -> None:
         LOGGER.info("Logged in as: %s", self.user)
+
+    async def update_state(self) -> ...:
+        if not self.owner:
+            LOGGER.warning("No user object available for owner. Stream state cannot be updated.")
+            return
+
+        followers = await self.owner.fetch_followers(first=1)
+        subscribers = await self.owner.fetch_broadcaster_subscriptions(first=1)
+
+        latest_follow = (await followers.followers)[0]
+        latest_sub = (await subscribers.subscriptions)[0]
+        first = await self.db.fetch_first_redeem()
+        first_user = await self.fetch_user(id=first.user_id) if first else None
+
+        self.stream_state["follower"] = str(latest_follow.user.display_name)
+        self.stream_state["subscriber"] = str(latest_sub.user.display_name)
+        self.stream_state["first"] = first_user.display_name if first_user else "None?"
+
+        LOGGER.info("Successfully updated Stream State.")
 
     async def event_oauth_authorized(self, payload: UserTokenPayload) -> None:
         token = payload.access_token
