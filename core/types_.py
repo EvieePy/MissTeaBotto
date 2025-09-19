@@ -52,3 +52,9 @@ class SpotifyRespT(TypedDict):
     expires_in: str
     scope: str
     token_type: str
+
+
+class StreamStateT(TypedDict, total=False):
+    subscriber: str
+    follower: str
+    first: str
