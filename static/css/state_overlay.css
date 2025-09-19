@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Coiny&display=swap');
+
+html, body {
+    margin: 0;
+    box-sizing: border-box;
+  font-family: "Coiny", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+main {
+    display: flex;
+    justify-content: start;
+}
+
+#stateContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 2em;
+    justify-content: flex-start;
+    padding: 1rem;
+    max-width: 22rem;
+    border-radius: 0.25rem;
+}
+
+#stateContainer > img {
+    height: 6rem;
+    width: 6rem;
+}
+
+.stroke {
+  -webkit-text-stroke: 1px rgb(10, 10, 10);
+   color: rgb(255, 208, 227);
+   text-shadow:
+       3px 3px 0 rgb(10, 10, 10),
+     -1px -1px 0 rgb(10, 10, 10),  
+      1px -1px 0 rgb(10, 10, 10),
+      -1px 1px 0 rgb(10, 10, 10),
+       1px 1px 0 rgb(10, 10, 10);
+}
