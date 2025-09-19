@@ -41,7 +41,7 @@ class GeneralComponent(commands.Component):
     async def component_load(self) -> None:
         self.discord_routine.start()
 
-    @routines.routine(delta=datetime.timedelta(minutes=30), wait_first=True)
+    @routines.routine(delta=datetime.timedelta(minutes=20), wait_first=True)
     async def discord_routine(self) -> None:
         # TODO: Logging...
 
