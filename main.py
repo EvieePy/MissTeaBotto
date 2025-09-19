@@ -15,6 +15,7 @@ limitations under the License.
 
 import asyncio
 import logging
+import platform
 
 import aiohttp
 from cryptography.fernet import Fernet
@@ -27,13 +28,21 @@ from database import Database
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+def set_event_loop() -> None:
+    system = platform.system()
+
+    if system == "Windows":
+        asyncio.set_event_loop(asyncio.ProactorEventLoop())
+        LOGGER.warning("Set Event Loop Policy for windows to ProtactorEventLoop.")
+
+
 def main() -> None:
     setup_logging()
+    set_event_loop()
 
     with open(".secret") as fp:
         key = fp.read()
-
-    fern = Fernet(key)
+        fern = Fernet(key)
 
     async def runner() -> None:
         async with (
