@@ -20,11 +20,11 @@ import base64
 import datetime
 import logging
 import secrets
-import urllib.parse
 from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
-from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from starlette.staticfiles import StaticFiles
 from twitchio import web
 
 from .config import config
@@ -48,14 +48,15 @@ class CustomAdapter(web.StarletteAdapter):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.spotify_state: dict[str, datetime.datetime] = {}
-
         self._clear_state_task: asyncio.Task[None] = asyncio.create_task(self._clear_state())
 
         self.add_route("/spotify/callback", self.spotify_callback, methods=["GET"])
         self.add_route("/oauth/spotify", self.spotify_oauth, methods=["GET"])
-        self.add_route("/overlays/first", self.first_redeem_route, methods=["GET"])
 
-        self._first: list[str] = []
+        self.add_route("/data/stream_state", self.stream_state, methods=["GET"])
+        self.add_route("/overlays/stream_state", self.stream_state_overlay, methods=["GET"])
+
+        self.mount("/static", app=StaticFiles(directory="./static"), name="static")
 
     async def _clear_state(self) -> None:
         while not self._closing:
@@ -143,21 +144,9 @@ class CustomAdapter(web.StarletteAdapter):
 
         return Response("Success. You can now leave this page.")
 
-    async def first_redeem_route(self, request: Request) -> Response:
+    async def stream_state(self, request: Request) -> Response:
         bot = cast("Bot", self.client)
-        html = """<html><head><meta http-equiv="refresh" content="30"></head><body>First: {name}</body>"""
+        return JSONResponse(bot.stream_state)
 
-        payload = await bot.db.fetch_first_redeem()
-        if not payload:
-            html = html.format(name="None?")
-            return HTMLResponse(html)
-
-        if self._first and self._first[0] == payload.user_id:
-            return HTMLResponse(html.format(name=self._first[1]))
-
-        user = await bot.fetch_user(id=payload.user_id)
-        name = urllib.parse.quote(user.display_name)
-        html = html.format(name=name)
-
-        self._first = [payload.user_id, name]
-        return HTMLResponse(html)
+    async def stream_state_overlay(self, request: Request) -> Response:
+        return FileResponse("./static/html/state_overlay.html", content_disposition_type="inline", media_type="text/html")
