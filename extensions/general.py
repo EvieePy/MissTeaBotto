@@ -75,6 +75,7 @@ class GeneralComponent(commands.Component):
 
         title = payload.reward.title
         if title == "First!":
+            self.bot.stream_state["first"] = payload.user.display_name or str(payload.user)
             await self.bot.db.add_first_redeem(payload.user.id)
 
     @commands.group()
