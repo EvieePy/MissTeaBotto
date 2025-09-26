@@ -63,6 +63,7 @@ class Bot(commands.AutoBot):
             eventsub.StreamOfflineSubscription(broadcaster_user_id=user_id),
             eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=user_id),
             eventsub.ChannelPointsRedeemUpdateSubscription(broadcaster_user_id=user_id),
+            eventsub.ChatNotificationSubscription(broadcaster_user_id=user_id, user_id=self.user.id),
         ]
 
     async def subscribe(self, user_id: str | None = None) -> None:
@@ -91,21 +92,22 @@ class Bot(commands.AutoBot):
     async def event_ready(self) -> None:
         LOGGER.info("Logged in as: %s", self.user)
 
-    async def update_state(self) -> ...:
+    async def update_state(self) -> None:
         if not self.owner:
             LOGGER.warning("No user object available for owner. Stream state cannot be updated.")
             return
 
         followers = await self.owner.fetch_followers(first=1)
-        subscribers = await self.owner.fetch_broadcaster_subscriptions(first=1)
-
         latest_follow = (await followers.followers)[0]
-        latest_sub = (await subscribers.subscriptions)[0]
+
+        with open("static/LSUB") as fp:
+            latest_sub = fp.read()
+
         first = await self.db.fetch_first_redeem()
         first_user = await self.fetch_user(id=first.user_id) if first else None
 
-        self.stream_state["follower"] = str(latest_follow.user.display_name)
-        self.stream_state["subscriber"] = str(latest_sub.user.display_name)
+        self.stream_state["follower"] = latest_follow.user.display_name or str(latest_follow.user)
+        self.stream_state["subscriber"] = latest_sub
         self.stream_state["first"] = first_user.display_name if first_user else "None?"
 
         LOGGER.info("Successfully updated Stream State.")
@@ -181,3 +183,19 @@ class Bot(commands.AutoBot):
         async with self.session.post(webhook, json=data) as resp:
             if resp.status >= 300:
                 LOGGER.warning("Unable to send discord live notification: %s", resp.status)
+
+    async def event_chat_notification(self, payload: twitchio.ChatNotification) -> None:
+        if payload.notice_type not in ("sub", "resub"):
+            return
+
+        if payload.anonymous:
+            return
+
+        with open("static/LSUB", "w") as fp:
+            sub = payload.chatter.display_name or str(payload.chatter)
+            fp.write(sub)
+
+            self.stream_state["subscriber"] = sub
+
+    async def event_follow(self, payload: twitchio.ChannelFollow) -> None:
+        self.stream_state["follower"] = payload.user.display_name or str(payload.user)
