@@ -89,6 +89,9 @@ class HelpComponent(commands.Component):
 
     @commands.command()
     async def help(self, ctx: commands.Context[core.Bot], *, comm: str | None = None) -> None:
+        """Retrieve help for a specific command or view all available commands.
+        Usage: !help [command] E.g. To display this message: !help help
+        """
         if not comm:
             return await self.process_all_help(ctx)
 
