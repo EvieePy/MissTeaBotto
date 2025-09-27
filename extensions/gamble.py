@@ -23,10 +23,10 @@ from typing import TYPE_CHECKING
 import twitchio  # noqa: TC002
 from twitchio.ext import commands, routines
 
+import core
+
 
 if TYPE_CHECKING:
-    import core
-
     from ..database import Database
     from ..database.models import GambleModel
 
@@ -162,6 +162,9 @@ class GambleComponent(commands.Component):
     @commands.group(invoke_fallback=True)
     @commands.cooldown(rate=2, per=8)
     async def gamble(self, ctx: commands.Context[core.Bot], *, amount: str) -> None:
+        """Gamble the provided amount of points.
+        Usage: !gamble <amount>
+        """
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(chatter.id)
@@ -192,6 +195,9 @@ class GambleComponent(commands.Component):
 
     @gamble.command(name="all")
     async def gamble_all(self, ctx: commands.Context[core.Bot]) -> None:
+        """Gamble all your current points for a chance of a better return.
+        Usage: !gamble all
+        """
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(chatter.id)
@@ -208,8 +214,8 @@ class GambleComponent(commands.Component):
         else:
             await ctx.send(f"{chatter.mention} gambled everything and lost everything LUL LUL")
 
-    async def fetch_top_three(self, ctx: commands.Context[core.Bot]) -> None:
-        records = (await self.db.fetch_all_points(order=True))[:3]
+    async def fetch_top_n(self, ctx: commands.Context[core.Bot], n: int = 5) -> None:
+        records = (await self.db.fetch_all_points(order=True))[:n]
         users = {u.id: u for u in await self.bot.fetch_users(ids=[r.user_id for r in records])}
 
         strings: list[str] = []
@@ -219,29 +225,45 @@ class GambleComponent(commands.Component):
                 continue
 
             strings.append(f"{user.mention}: {record.points}")
-        await ctx.send("Top 3: " + ", ".join(strings))
+        await ctx.send(f"Top {n}: " + ", ".join(strings))
 
     @commands.group(invoke_fallback=True)
     @commands.cooldown(rate=3, per=30)
     async def points(self, ctx: commands.Context[core.Bot], *, user: twitchio.User | None = None) -> None:
-        if not user:
-            return await self.fetch_top_three(ctx)
+        """Check points for yourself or a provided user.
+        Usage: !points [user]
+        """
+        to_fetch = user or ctx.chatter
+        record = await self.db.fetch_points(user_id=to_fetch.id)
 
-        record = await self.db.fetch_points(user_id=user.id)
         if not record:
-            await ctx.reply(f"{user.mention} has never made any points here!")
+            await ctx.reply(f"{to_fetch.mention} has never made any points here!")
             return
 
-        await ctx.reply(f"{user.mention} has {record.points} points!")
+        await ctx.reply(f"{to_fetch.mention} has {record.points} points!")
+
+    @points.command(name="leaderboard", aliases=["board", "leaders", "top"])
+    @commands.cooldown(rate=3, per=30)
+    async def points_leaderboard(self, ctx: commands.Context[core.Bot]) -> None:
+        """Fetch and display the top 5 points leaders.
+        Usage: !points leaderboard|board|leaders|top
+        """
+        await self.fetch_top_n(ctx)
 
     @points.command(aliases=["donate"])
-    @commands.is_broadcaster()
+    @core.permissions_check(perms=core.ModPermissions.admin)
     async def give(self, ctx: commands.Context[core.Bot], user: twitchio.User, *, amount: int) -> None:
+        """Give points to another user. This is not the same as sharing as no points are taken from you.
+        Usage: !give|donate <user> <amount>
+        """
         await self.db.update_points(user.id, amount)
         await ctx.reply(f"You have granted {user.mention} {amount} points mystyp2Sip")
 
     @points.command(aliases=["share"])
     async def send(self, ctx: commands.Context[core.Bot], user: twitchio.User, *, amount: str) -> None:
+        """Send some of your points to a user.
+        Usage: !send|share <user> <amount>
+        """
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(chatter.id)
@@ -270,7 +292,9 @@ class GambleComponent(commands.Component):
     @commands.command()
     @commands.cooldown(rate=2, per=120, base=commands.GCRACooldown)
     async def rob(self, ctx: commands.Context[core.Bot], *, user: twitchio.User) -> None:
-        """Attempt to rob another user. 10% chance to win, 10% chance to backfire!"""
+        """Attempt to rob another user. 10% chance to win, 10% chance to backfire!
+        Usage: !rob <user>
+        """
         chatter = ctx.chatter
 
         record = await self.db.fetch_points(user.id)
