@@ -50,7 +50,7 @@ class GeneralComponent(commands.Component):
             return
 
         assert self.bot.user
-        await user.send_message("Join my discord for tea! https://discord.gg/cft7GbQt58", sender=self.bot.user)
+        await user.send_message("Join the discord for chats and tea! https://discord.gg/cft7GbQt58", sender=self.bot.user)
 
     @commands.Component.listener()
     async def event_ad_break(self, payload: twitchio.ChannelAdBreakBegin) -> None:
@@ -67,7 +67,7 @@ class GeneralComponent(commands.Component):
         )
 
         await asyncio.sleep(payload.duration)
-        await payload.broadcaster.send_message(message="Welcome back from ads! mystyp2Pats", sender=self.bot.user)
+        await payload.broadcaster.send_message(message="Welcome back from ads everyone! mystyp2Pats", sender=self.bot.user)
 
     async def event_custom_redemption_add(self, payload: twitchio.ChannelPointsRedemptionAdd) -> None:
         if payload.broadcaster.id == self.bot.owner_id:
