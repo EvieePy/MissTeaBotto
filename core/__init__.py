@@ -14,6 +14,7 @@ limitations under the License.
 """
 
 from .bot import Bot as Bot
+from .cache import *
 from .config import config as config
 from .exceptions import *
 from .permissions import *
