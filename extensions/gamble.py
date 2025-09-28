@@ -38,8 +38,6 @@ class GambleComponent(commands.Component):
     def __init__(self, bot: core.Bot) -> None:
         self.bot = bot
         self.db: Database = bot.db
-
-        self.is_streaming: bool = False
         self.speakers: dict[str, datetime.datetime] = {}
 
         self.time_to_speak: int = 30
@@ -58,16 +56,6 @@ class GambleComponent(commands.Component):
 
     async def component_load(self) -> None:
         self.check_points.start()
-
-        assert self.bot.owner_id  # [Reason: I always provided the ID]
-
-        # TODO: TwitchIO (Singular fetch)
-        streams = self.bot.fetch_streams(user_ids=[self.bot.owner_id], max_results=20)
-        async for stream in streams:
-            if stream.user.id != self.bot.owner_id:
-                continue
-
-            self.is_streaming = True
 
     async def component_teardown(self) -> None:
         self.check_points.cancel()
@@ -92,14 +80,14 @@ class GambleComponent(commands.Component):
         if payload.broadcaster != self.bot.owner:
             return
 
-        self.is_streaming = True
+        self.bot.stream_state["online"] = True
 
     @commands.Component.listener()
     async def event_stream_offline(self, payload: twitchio.StreamOffline) -> None:
         if payload.broadcaster != self.bot.owner:
             return
 
-        self.is_streaming = False
+        self.bot.stream_state["online"] = False
         self.speakers.clear()
 
     @commands.Component.listener()
@@ -107,18 +95,18 @@ class GambleComponent(commands.Component):
         if payload.chatter.id == self.bot.bot_id:
             return
 
-        if not self.is_streaming:
+        if not self.bot.stream_state.get("online", False):
             return
 
         self.speakers[payload.chatter.id] = datetime.datetime.now(tz=datetime.UTC)
 
     async def parse_points(self, ctx: commands.Context[core.Bot], amount: str, current: int) -> int | bool:
-        value: int
+        value: float
 
         amount = amount.replace(" ", "")
         if amount.endswith("%"):
             amount = amount.removesuffix("%")
-            value = int(amount)
+            value = float(amount)
 
             if value <= 0:
                 await ctx.reply("No!")
@@ -131,12 +119,12 @@ class GambleComponent(commands.Component):
             per = value / 100
             return int(per * current)
 
-        value = int(amount)
+        value = float(amount)
         if value < 0:
             await ctx.send("Don't do this...")
             return False
 
-        return value
+        return int(value)
 
     async def do_gamble(
         self,
@@ -242,7 +230,7 @@ class GambleComponent(commands.Component):
 
         await ctx.reply(f"{to_fetch.mention} has {record.points} points!")
 
-    @points.command(name="leaderboard", aliases=["board", "leaders", "top"])
+    @points.command(name="leaderboard", aliases=["board", "leaders", "top", "leader"])
     @commands.cooldown(rate=3, per=30)
     async def points_leaderboard(self, ctx: commands.Context[core.Bot]) -> None:
         """Fetch and display the top 5 points leaders.
