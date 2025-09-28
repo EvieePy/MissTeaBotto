@@ -39,3 +39,9 @@ main {
       -1px 1px 0 rgb(10, 10, 10),
        1px 1px 0 rgb(10, 10, 10);
 }
+
+.fish {
+    height: 4rem!important;
+    width: 4rem!important;
+    margin-right: 0.5rem;
+}

@@ -33,6 +33,9 @@ async function transition(data, img) {
     let container = document.getElementById("stateContainer");
     let image = document.createElement("img");
     image.src = img;
+    if (data === "NonEssentialFish") {
+        image.classList.add("fish");
+    }
 
     container.classList.add(ANIM_IN);
 
@@ -70,6 +73,7 @@ async function overlayLoop() {
         await transition(first, "/static/images/cat_hype.png");
         await transition(follower, "/static/images/cat_love.png");
         await transition(subscriber, "/static/images/cat_star.png");
+        await transition("NonEssentialFish", "/static/images/fish.png");
 
         count++;
     }
