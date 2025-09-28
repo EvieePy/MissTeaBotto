@@ -34,18 +34,20 @@ async function transition(data, img) {
     let container = document.getElementById("songContainer");
     let songContainer = document.getElementById("song");
     let image = document.getElementById("songImg");
-    image.src = img;
 
     // Remove Previous Song...
     container.classList.remove(ANIM_IN);
     container.classList.add(ANIM_OUT);
 
     await sleep(ANIM_SPEED);
-    container.classList.remove(ANIM_OUT);
 
     // Add new Song...
-    container.classList.add(ANIM_IN);
     songContainer.innerText = data;
+    image.src = img;
+
+    await sleep(100);
+    container.classList.remove(ANIM_OUT);
+    container.classList.add(ANIM_IN);
 }
 
 async function overlayLoop() {
