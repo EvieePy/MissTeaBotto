@@ -55,6 +55,7 @@ class CustomAdapter(web.StarletteAdapter):
 
         self.add_route("/data/stream_state", self.stream_state, methods=["GET"])
         self.add_route("/overlays/stream_state", self.stream_state_overlay, methods=["GET"])
+        self.add_route("/overlays/song", self.song_overlay, methods=["GET"])
 
         self.mount("/static", app=StaticFiles(directory="./static"), name="static")
 
@@ -150,3 +151,6 @@ class CustomAdapter(web.StarletteAdapter):
 
     async def stream_state_overlay(self, request: Request) -> Response:
         return FileResponse("./static/html/state_overlay.html", content_disposition_type="inline", media_type="text/html")
+
+    async def song_overlay(self, request: Request) -> Response:
+        return FileResponse("./static/html/song_overlay.html", content_disposition_type="inline", media_type="text/html")

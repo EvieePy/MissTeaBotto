@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+html,
+body {
+    margin: 1rem;
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+    font-variation-settings:
+        "wdth" 100;
+}
+
+main {
+    display: flex;
+    justify-content: start;
+}
+
+#songContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1em;
+    justify-content: flex-start;
+    padding: 1rem;
+    max-width: 22rem;
+    background-color: #312d3b;
+    color: #ffffffe1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    min-width: 16rem;
+}
+
+#songContainer > img {
+    height: 4rem;
+    width: 4rem;
+    border-radius: 0.5rem;
+}
+
+.innerContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+#song {
+    font-weight: 400;
+    font-size: 0.85em;
+    opacity: 90%;
+}
