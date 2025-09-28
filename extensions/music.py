@@ -243,6 +243,9 @@ class Music(commands.Component):
 
     @commands.command(aliases=["current", "song", "currentsong", "np", "nowplaying", "playing"])
     async def now_playing(self, ctx: commands.Context[core.Bot]) -> None:
+        """Retrieve the currently playing track on stream.
+        Usage: !np|current|song|currentsong|playing|nowplaying|now_playing
+        """
         title = self.bot.stream_state.get("playing", {}).get("title", "Nothing!")
         await ctx.reply(f"Currently playing: {title}")
 
