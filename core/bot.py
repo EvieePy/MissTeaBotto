@@ -27,6 +27,8 @@ from .adapter import CustomAdapter
 from .config import config
 from .exceptions import *
 
+from .cache import TTLCache
+
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -46,7 +48,7 @@ class Bot(commands.AutoBot):
         self.db = db
         self.fern = fern
         self.session = session
-        self.stream_state: StreamStateT = {"playing": {}}
+        self.stream_state: StreamStateT = {"playing": {}, "online": False, "chatter_cache": TTLCache()}
 
         options = config["bot"]
         super().__init__(**options, prefix=self.prefix, adapter=CustomAdapter())
@@ -109,6 +111,13 @@ class Bot(commands.AutoBot):
         self.stream_state["follower"] = latest_follow.user.display_name or str(latest_follow.user)
         self.stream_state["subscriber"] = latest_sub
         self.stream_state["first"] = first_user.display_name if first_user else "None?"
+
+        streams = self.fetch_streams(user_ids=[str(self.owner_id)], max_results=20)
+        async for stream in streams:
+            if stream.user.id != self.owner_id:
+                continue
+
+            self.stream_state["online"] = True
 
         LOGGER.info("Successfully updated Stream State.")
 

@@ -13,7 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from typing import TypedDict
+from typing import TypedDict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import twitchio
+    from core import TTLCache
 
 
 class BotOptionsT(TypedDict):
@@ -65,3 +69,5 @@ class StreamStateT(TypedDict, total=False):
     follower: str
     first: str
     playing: PlayingT
+    online: bool
+    chatter_cache: TTLCache[str, twitchio.PartialUser | twitchio.Chatter]
