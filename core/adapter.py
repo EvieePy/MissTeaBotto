@@ -53,9 +53,11 @@ class CustomAdapter(web.StarletteAdapter):
         self.add_route("/spotify/callback", self.spotify_callback, methods=["GET"])
         self.add_route("/oauth/spotify", self.spotify_oauth, methods=["GET"])
 
+        # Overlays
         self.add_route("/data/stream_state", self.stream_state, methods=["GET"])
         self.add_route("/overlays/stream_state", self.stream_state_overlay, methods=["GET"])
         self.add_route("/overlays/song", self.song_overlay, methods=["GET"])
+        self.add_route("/overlays/birds", self.birds_overlay, methods=["GET"])
 
         self.mount("/static", app=StaticFiles(directory="./static"), name="static")
 
@@ -147,10 +149,16 @@ class CustomAdapter(web.StarletteAdapter):
 
     async def stream_state(self, request: Request) -> Response:
         bot = cast("Bot", self.client)
-        return JSONResponse(bot.stream_state)
+        
+        state = bot.stream_state.copy()
+        state["chatter_cache"] = state["chatter_cache"].as_json() # type: ignore
+        return JSONResponse(state)
 
     async def stream_state_overlay(self, request: Request) -> Response:
         return FileResponse("./static/html/state_overlay.html", content_disposition_type="inline", media_type="text/html")
 
     async def song_overlay(self, request: Request) -> Response:
         return FileResponse("./static/html/song_overlay.html", content_disposition_type="inline", media_type="text/html")
+
+    async def birds_overlay(self, request: Request) -> Response:
+        return FileResponse("./static/html/birds_overlay.html", content_disposition_type="inline", media_type="text/html")
