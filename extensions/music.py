@@ -15,6 +15,7 @@ limitations under the License.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import logging
 import urllib.parse
@@ -36,6 +37,7 @@ SPOTIFY_TOKEN = "https://accounts.spotify.com/api/token"
 SPOTIFY_SEARCH = SPOTIFY_BASE + "/search"
 SPOTIFY_DEVICES = SPOTIFY_BASE + "/me/player/devices"
 SPOTIFY_QUEUE = SPOTIFY_BASE + "/me/player/queue"
+SPOTIFY_CURRENT = SPOTIFY_BASE + "/me/player/currently-playing"
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -47,6 +49,49 @@ class Music(commands.Component):
         self.db = bot.db
 
         self._device: str | None = None
+        self._current_song_task: asyncio.Task[None] | None = None
+
+    async def component_load(self) -> None:
+        self._current_song_task = asyncio.create_task(self._check_current_song())
+
+    async def component_teardown(self) -> None:
+        if not self._current_song_task:
+            return
+
+        try:
+            self._current_song_task.cancel()
+        except Exception:
+            pass
+
+    async def _process_current_song(self, data: dict[str, Any] | None) -> float:
+        LOGGER.debug("Updating Spotify Now Playing...")
+
+        if not data:
+            self.bot.stream_state["playing"] = {}
+            return 10
+
+        track = data.get("item")
+        if not track:
+            self.bot.stream_state["playing"] = {}
+            return 10
+
+        duration: int = track["duration_ms"]
+        progress: int | None = data.get("progress_ms")
+        remaining: int = duration - progress if progress else 10000
+        remaining_s: float = remaining / 1000
+
+        name: str = f"{track['name']} - {track['artists'][0]['name']}"
+        update = {"title": name, "url": track["href"], "image": track["album"]["images"][0]["url"]}
+        self.bot.stream_state["playing"].update(update)  # type: ignore
+
+        return min(remaining_s + 1, 10)
+
+    async def _check_current_song(self) -> None:
+        while True:
+            data = await self.make_request(SPOTIFY_CURRENT)
+            duration = await self._process_current_song(data)
+
+            await asyncio.sleep(duration)
 
     async def _refresh(self, refresh: str) -> str | None:
         client_id = core.config["spotify"]["client_id"]
@@ -195,6 +240,11 @@ class Music(commands.Component):
 
         artists = ", ".join(a["name"] for a in track["artists"])
         await ctx.send(f"{ctx.chatter.mention} I have queued your request: {track['name']} by {artists}")
+
+    @commands.command(aliases=["current", "song", "currentsong", "np", "nowplaying", "playing"])
+    async def now_playing(self, ctx: commands.Context[core.Bot]) -> None:
+        title = self.bot.stream_state.get("playing", {}).get("title", "Nothing!")
+        await ctx.reply(f"Currently playing: {title}")
 
 
 async def setup(bot: core.Bot) -> None:

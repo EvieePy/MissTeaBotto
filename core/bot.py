@@ -46,7 +46,7 @@ class Bot(commands.AutoBot):
         self.db = db
         self.fern = fern
         self.session = session
-        self.stream_state: StreamStateT = {}
+        self.stream_state: StreamStateT = {"playing": {}}
 
         options = config["bot"]
         super().__init__(**options, prefix=self.prefix, adapter=CustomAdapter())

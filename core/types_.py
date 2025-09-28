@@ -54,7 +54,14 @@ class SpotifyRespT(TypedDict):
     token_type: str
 
 
+class PlayingT(TypedDict, total=False):
+    title: str
+    url: str
+    image: str
+
+
 class StreamStateT(TypedDict, total=False):
     subscriber: str
     follower: str
     first: str
+    playing: PlayingT
