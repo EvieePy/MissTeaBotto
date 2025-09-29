@@ -24,10 +24,9 @@ from twitchio import eventsub
 from twitchio.ext import commands
 
 from .adapter import CustomAdapter
+from .cache import TTLCache
 from .config import config
 from .exceptions import *
-
-from .cache import TTLCache
 
 
 if TYPE_CHECKING:
@@ -66,16 +65,23 @@ class Bot(commands.AutoBot):
             eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=user_id),
             eventsub.ChannelPointsRedeemUpdateSubscription(broadcaster_user_id=user_id),
             eventsub.ChatNotificationSubscription(broadcaster_user_id=user_id, user_id=self.user.id),
+            eventsub.ChannelRaidSubscription(to_broadcaster_user_id=user_id),
         ]
 
-    async def subscribe(self, user_id: str | None = None) -> None:
-        # TODO: Logging...
+    def log_sub_errors(self, resp: twitchio.MultiSubscribePayload) -> None:
+        for error in resp.errors:
+            if error.error.status == 409:
+                continue
 
+            LOGGER.error("An error occurred during subscribing: %s", error.error, exc_info=error.error)
+
+    async def subscribe(self, user_id: str | None = None) -> None:
         assert self.user
 
         if user_id:
             subs = self.get_subs(user_id)
-            await self.multi_subscribe(subs)
+            resp = await self.multi_subscribe(subs)
+            self.log_sub_errors(resp)
             return
 
         tokens = await self.db.fetch_tokens()
@@ -84,7 +90,8 @@ class Bot(commands.AutoBot):
                 continue
 
             subs = self.get_subs(payload.user_id)
-            await self.multi_subscribe(subs)
+            resp = await self.multi_subscribe(subs)
+            self.log_sub_errors(resp)
 
     async def setup_hook(self) -> None:
         await self.subscribe()
@@ -179,7 +186,7 @@ class Bot(commands.AutoBot):
             return
 
         # Discords embed bot vs Twitch's Embed data are slightly out of sync...
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
 
         webhook = config["webhooks"]["discord"]
         url = f"https://twitch.tv/{payload.broadcaster.name}"

@@ -24,28 +24,28 @@ import core
 class AnimalsComponet(commands.Component):
     def __init__(self, bot: core.Bot) -> None:
         self.bot = bot
-        self.cache = self.bot.stream_state["chatter_cache"]  #type: ignore [Reason: Added in bot __init__]
-        
+        self.cache = self.bot.stream_state["chatter_cache"]  # type: ignore [Reason: Added in bot __init__]
+
     async def component_teardown(self) -> None:
         self.check_chatters.cancel()
 
     async def component_load(self) -> None:
         assert self.bot.owner_id  # [Reason: I always provided the ID]
         self.check_chatters.start()
-    
+
     @routines.routine(delta=datetime.timedelta(minutes=3))
     async def check_chatters(self) -> None:
         await self.bot.wait_until_ready()
-        
+
         if not self.bot.stream_state.get("online", False):
             return
-        
+
         assert self.bot.owner and self.bot.user
         chatters = await self.bot.owner.fetch_chatters(moderator=self.bot.user)
 
         async for chatter in chatters.users:
             self.cache[chatter.display_name or str(chatter)] = chatter
-    
+
     @commands.Component.listener()
     async def event_stream_online(self, payload: twitchio.StreamOnline) -> None:
         self.bot.stream_state["online"] = True
@@ -57,10 +57,10 @@ class AnimalsComponet(commands.Component):
     @commands.Component.listener()
     async def event_message(self, payload: twitchio.ChatMessage) -> None:
         assert self.bot.user
-        
+
         if payload.chatter.id == self.bot.user.id:
             return
-        
+
         chatter = payload.chatter
         self.cache[chatter.display_name or str(chatter)] = chatter
 

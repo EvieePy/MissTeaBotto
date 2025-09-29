@@ -32,7 +32,7 @@ def set_event_loop() -> None:
     system = platform.system()
 
     if system == "Windows":
-        asyncio.set_event_loop(asyncio.ProactorEventLoop())
+        asyncio.set_event_loop(asyncio.AbstractEventLoop())
         LOGGER.warning("Set Event Loop Policy for windows to ProtactorEventLoop.")
 
 

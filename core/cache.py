@@ -16,7 +16,7 @@ limitations under the License.
 import datetime
 from collections.abc import ItemsView, Iterator
 from types import MappingProxyType
-from typing import overload, Any
+from typing import Any, overload
 
 from twitchio.utils import MISSING
 
@@ -29,21 +29,21 @@ __all__ = ("TTLCache",)
 class TTLCache[K, V]:
     _cache: dict[K, V]
     _times: dict[K, datetime.datetime]
-    
+
     def __init__(self, max_size: int = MISSING, ttl: int | datetime.timedelta = 600, data: dict[K, V] | None = None) -> None:
         self._initial_update(data)
-        
+
         self._max_size = max_size
         self._cache: dict[K, V] = {}
         self._times: dict[K, datetime.datetime] = {}
         self._ttl: datetime.timedelta = ttl if isinstance(ttl, datetime.timedelta) else datetime.timedelta(seconds=ttl)
-        
+
     def _initial_update(self, data: dict[K, V] | None = None) -> None:
         if not data:
             self._cache = {}
             self._times = {}
             return
-        
+
         now = datetime.datetime.now(tz=datetime.UTC)
         self._cache.update(data)
         self._times.update({k: now for k in self._cache})
@@ -128,18 +128,15 @@ class TTLCache[K, V]:
         self._cache.pop(key, None)
         self._times.pop(key, None)
 
-    def as_json(self) -> list[dict[str, Any]] :
+    def as_json(self) -> list[dict[str, Any]]:
         to_return: list[dict[str, Any]] = []
 
         for k, v in self._cache.items():
             inner: dict[str, Any] = {}
             key = str(k)
-            
-            if not isinstance(v, (str, int, float, bool)) and v is not None:
-                value = str(v)
-            else:
-                value = v
-            
+
+            value = str(v) if not isinstance(v, (str, int, float, bool)) and v is not None else v
+
             inner[key] = value
             to_return.append(inner)
 
