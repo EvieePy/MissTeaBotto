@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from .adapter import CustomAdapter as CustomAdapter
 from .bot import Bot as Bot
 from .cache import *
 from .config import config as config

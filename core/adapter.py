@@ -18,11 +18,13 @@ from __future__ import annotations
 import asyncio
 import base64
 import datetime
+import json
 import logging
 import secrets
 from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
+from sse_starlette import EventSourceResponse
 from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.staticfiles import StaticFiles
 from twitchio import web
@@ -31,10 +33,12 @@ from .config import config
 
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from starlette.requests import Request
 
     from .bot import Bot
-    from .types_ import SpotifyRespT
+    from .types_ import AlertEventT, SpotifyRespT
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -47,9 +51,12 @@ SPOTIFY_TOKEN = "https://accounts.spotify.com/api/token"
 class CustomAdapter(web.StarletteAdapter):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+
+        self.event_queue: asyncio.Queue[AlertEventT] = asyncio.Queue()
         self.spotify_state: dict[str, datetime.datetime] = {}
         self._clear_state_task: asyncio.Task[None] = asyncio.create_task(self._clear_state())
 
+        # Spotify
         self.add_route("/spotify/callback", self.spotify_callback, methods=["GET"])
         self.add_route("/oauth/spotify", self.spotify_oauth, methods=["GET"])
 
@@ -57,8 +64,13 @@ class CustomAdapter(web.StarletteAdapter):
         self.add_route("/data/stream_state", self.stream_state, methods=["GET"])
         self.add_route("/overlays/stream_state", self.stream_state_overlay, methods=["GET"])
         self.add_route("/overlays/song", self.song_overlay, methods=["GET"])
-        self.add_route("/overlays/birds", self.birds_overlay, methods=["GET"])
+        self.add_route("/overlays/animals", self.birds_overlay, methods=["GET"])
+        self.add_route("/overlays/alerts", self.alerts_overlay, methods=["GET"])
 
+        # SSE
+        self.add_route("/sse/alerts", self.alerts_overlay_sse)
+
+        # Static Files
         self.mount("/static", app=StaticFiles(directory="./static"), name="static")
 
     async def _clear_state(self) -> None:
@@ -149,9 +161,9 @@ class CustomAdapter(web.StarletteAdapter):
 
     async def stream_state(self, request: Request) -> Response:
         bot = cast("Bot", self.client)
-        
+
         state = bot.stream_state.copy()
-        state["chatter_cache"] = state["chatter_cache"].as_json() # type: ignore
+        state["chatter_cache"] = state["chatter_cache"].as_json()  # type: ignore
         return JSONResponse(state)
 
     async def stream_state_overlay(self, request: Request) -> Response:
@@ -161,4 +173,21 @@ class CustomAdapter(web.StarletteAdapter):
         return FileResponse("./static/html/song_overlay.html", content_disposition_type="inline", media_type="text/html")
 
     async def birds_overlay(self, request: Request) -> Response:
-        return FileResponse("./static/html/birds_overlay.html", content_disposition_type="inline", media_type="text/html")
+        return FileResponse("./static/html/animals_overlay.html", content_disposition_type="inline", media_type="text/html")
+
+    async def add_alert(self, data: AlertEventT) -> None:
+        await self.event_queue.put(data)
+
+    async def alert_event(self) -> AsyncGenerator[str]:
+        while True:
+            data: AlertEventT = await self.event_queue.get()
+            yield json.dumps(data)
+
+            wait: int = data.get("duration") or 0
+            await asyncio.sleep(wait)
+
+    async def alerts_overlay_sse(self, request: Request) -> Response:
+        return EventSourceResponse(self.alert_event())
+
+    async def alerts_overlay(self, request: Request) -> Response:
+        return FileResponse("./static/html/alerts_overlay.html", content_disposition_type="inline", media_type="text/html")
