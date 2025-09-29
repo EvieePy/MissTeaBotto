@@ -4,3 +4,4 @@ pyyaml
 asyncpg
 asyncpg-stubs
 cryptography
+sse-starlette
